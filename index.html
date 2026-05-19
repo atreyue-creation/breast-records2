@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="수술기록">
+<link rel="manifest" href="manifest.json">
+<title>유방재건 수술기록</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR','Malgun Gothic',sans-serif;background:#eef2f7;color:#2c3e50;min-height:100vh;max-width:480px;margin:0 auto;position:relative}
+
+/* Header */
+#hdr{background:linear-gradient(135deg,#1a5276 0%,#2980b9 100%);color:#fff;padding:12px 14px;position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.25);min-height:50px}
+#hdr h1{font-size:16px;font-weight:700;line-height:1.2}
+.hbtn{background:rgba(255,255,255,.22);border:none;color:#fff;padding:6px 13px;border-radius:14px;font-size:13px;font-weight:600;cursor:pointer}
+#backBtn{background:none;border:none;color:#fff;font-size:26px;cursor:pointer;padding:0 10px 0 0;line-height:1;display:none}
+
+/* Views */
+.view{display:none;padding-bottom:72px}
+.view.active{display:block}
+
+/* Tab bar */
+#tabBar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:1px solid #e0e4ea;display:flex;z-index:150}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px 10px;cursor:pointer;border:none;background:none;color:#aaa;font-size:11px;gap:2px;transition:color .15s}
+.tab.on{color:#1a5276}
+.tab-ic{font-size:22px}
+
+/* FAB */
+.fab{position:fixed;bottom:80px;right:20px;width:54px;height:54px;background:linear-gradient(135deg,#1a5276,#2980b9);color:#fff;border:none;border-radius:50%;font-size:30px;cursor:pointer;box-shadow:0 4px 16px rgba(26,82,118,.4);z-index:160;display:flex;align-items:center;justify-content:center}
+
+/* Stats bar */
+.statsbar{display:flex;background:#fff;border-bottom:1px solid #e8e8e8;padding:9px 14px;font-size:13px;color:#888}
+.statsbar strong{color:#1a5276;font-size:15px;font-weight:700}
+
+/* Search */
+.srchwrap{padding:10px 12px;background:#fff;border-bottom:1px solid #e8e8e8}
+.srchinput{width:100%;padding:9px 16px;border:1.5px solid #dde3ee;border-radius:20px;font-size:14px;background:#f7f9fc;outline:none;transition:border-color .2s}
+.srchinput:focus{border-color:#2980b9}
+
+/* Patient list */
+.listwrap{padding:6px 0}
+.ptitem{display:flex;align-items:center;background:#fff;margin:6px 11px;padding:12px 13px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;transition:transform .1s,box-shadow .1s}
+.ptitem:active{transform:scale(.985);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.ptavatar{width:42px;height:42px;background:linear-gradient(135deg,#1a5276,#2980b9);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;margin-right:11px;flex-shrink:0}
+.ptinfo{flex:1;min-width:0}
+.ptnum{font-size:15px;font-weight:700;color:#1a1a2e}
+.ptmeta{font-size:12px;color:#888;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptarrow{color:#ccc;font-size:20px;margin-left:4px}
+
+/* Empty */
+.empty{text-align:center;padding:60px 20px}
+.empty-ic{font-size:56px;opacity:.35;margin-bottom:10px}
+.empty-tx{color:#bbb;font-size:14px;line-height:1.6}
+
+/* Section card */
+.scard{background:#fff;border-radius:10px;padding:15px;margin-bottom:11px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.stitle{font-size:12px;font-weight:700;color:#1a5276;text-transform:uppercase;letter-spacing:.6px;margin-bottom:13px;padding-bottom:8px;border-bottom:2px solid #eef2f7;display:flex;align-items:center;gap:5px}
+
+/* Form */
+.fscroll{padding:11px}
+.frow{display:flex;gap:8px}
+.fgroup{margin-bottom:11px;flex:1}
+.flabel{display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:4px}
+.fctl{width:100%;padding:9px 11px;border:1.5px solid #e0e4ea;border-radius:7px;font-size:14px;background:#fafbfc;color:#2c3e50;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.fctl:focus{border-color:#2980b9;background:#fff}
+textarea.fctl{min-height:70px;resize:vertical}
+select.fctl{background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 9px center;background-size:16px;padding-right:30px}
+
+/* Photo grid */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pgroup{}
+.pgroup.pfull{grid-column:1/-1}
+.plabel{font-size:11px;font-weight:600;color:#888;margin-bottom:4px;text-align:center}
+.pbox{width:100%;aspect-ratio:4/3;border:2px dashed #d0d8e4;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:#f7f9fc;overflow:hidden;position:relative;transition:border-color .2s}
+.pbox.has{border-style:solid;border-color:#2980b9}
+.pbox img{width:100%;height:100%;object-fit:cover}
+.pic{font-size:22px;color:#ccc}
+.phint{font-size:10px;color:#bbb;margin-top:3px}
+.prmbtn{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;line-height:22px;text-align:center;display:flex;align-items:center;justify-content:center}
+
+/* Buttons */
+.btn{padding:10px 20px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn:active{opacity:.75}
+.btnp{background:linear-gradient(135deg,#1a5276,#2980b9);color:#fff}
+.btns{background:#ecf0f1;color:#555}
+.btnd{background:#e74c3c;color:#fff}
+.btnblock{width:100%;display:block;text-align:center;padding:13px}
+.btnrow{display:flex;gap:8px;padding:11px}
+.btnrow .btn{flex:1}
+
+/* Detail */
+.dcard{background:#fff;border-radius:10px;margin:7px 11px;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden}
+.dtitle{background:#eef2f7;padding:9px 13px;font-size:12px;font-weight:700;color:#1a5276;text-transform:uppercase;letter-spacing:.5px}
+.drow{display:flex;padding:9px 13px;border-bottom:1px solid #f5f6fa}
+.drow:last-child{border-bottom:none}
+.dkey{font-size:13px;color:#999;width:120px;flex-shrink:0}
+.dval{font-size:13px;color:#2c3e50;font-weight:500;flex:1;word-break:break-word}
+
+/* Photo view */
+.pvgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 11px}
+.pvitem{}
+.pvitem.pvfull{grid-column:1/-1}
+.pvlabel{font-size:11px;color:#888;font-weight:600;text-align:center;margin-bottom:4px}
+.pvimg{width:100%;aspect-ratio:4/3;border-radius:8px;object-fit:cover;background:#f0f0f0;cursor:pointer;display:block}
+.pvempty{width:100%;aspect-ratio:4/3;border-radius:8px;background:#f5f6fa;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:11px}
+
+/* Lightbox */
+#lbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;display:none;align-items:center;justify-content:center;flex-direction:column}
+#lbox.open{display:flex}
+#lbox img{max-width:100%;max-height:90vh;object-fit:contain;border-radius:4px}
+#lbox-close{position:fixed;top:14px;right:16px;color:#fff;font-size:30px;cursor:pointer;background:none;border:none;line-height:1;z-index:601}
+
+/* Settings */
+.sitem{display:flex;align-items:center;background:#fff;padding:14px 13px;margin:6px 11px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);cursor:pointer}
+.sitem-ic{font-size:22px;margin-right:11px;flex-shrink:0}
+.sitem-tx{flex:1}
+.sitem-name{font-size:14px;font-weight:600;color:#2c3e50}
+.sitem-desc{font-size:12px;color:#999;margin-top:2px}
+.sitem-arr{color:#ccc;font-size:20px}
+.slabel{padding:10px 13px 4px;font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+
+/* Modal */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;display:none;align-items:flex-end;justify-content:center}
+.moverlay.open{display:flex}
+.modal{background:#fff;border-radius:16px 16px 0 0;padding:22px 18px 28px;width:100%;max-width:480px}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:10px}
+.modal-msg{font-size:14px;color:#555;line-height:1.5}
+.modal-actions{display:flex;gap:8px;margin-top:18px}
+.modal-actions .btn{flex:1;padding:12px}
+
+/* Toast */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(30,30,30,.88);color:#fff;padding:10px 22px;border-radius:20px;font-size:13px;z-index:500;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap}
+#toast.show{opacity:1}
+
+input[type=file]{display:none}
+.secmark{color:#e74c3c}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div id="hdr">
+  <div style="display:flex;align-items:center">
+    <button id="backBtn" onclick="goBack()">&#8592;</button>
+    <h1 id="hTitle">유방재건 수술기록</h1>
+  </div>
+  <div id="hActs"></div>
+</div>
+
+<!-- ===== VIEW: LIST ===== -->
+<div class="view active" id="view-list">
+  <div class="statsbar">전체 <strong id="totalCnt" style="margin:0 4px">0</strong>건</div>
+  <div class="srchwrap">
+    <input class="srchinput" type="search" id="srch" placeholder="🔍 환자번호, 특이사항 검색..." oninput="filterList()">
+  </div>
+  <div class="listwrap" id="ptList"></div>
+  <button class="fab" onclick="showNewForm()" title="새 기록">+</button>
+</div>
+
+<!-- ===== VIEW: FORM ===== -->
+<div class="view" id="view-form">
+  <div class="fscroll">
+    <input type="hidden" id="editId">
+
+    <!-- 기본 정보 -->
+    <div class="scard">
+      <div class="stitle">👤 기본 정보</div>
+      <div class="frow">
+        <div class="fgroup" style="flex:2">
+          <label class="flabel">환자번호 *</label>
+          <input type="text" class="fctl" id="f-pnum" placeholder="예: 2024-001">
+        </div>
+        <div class="fgroup" style="max-width:76px">
+          <label class="flabel">나이</label>
+          <input type="number" class="fctl" id="f-age" placeholder="세" min="1" max="120">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fgroup">
+          <label class="flabel">수술일</label>
+          <input type="date" class="fctl" id="f-opdate">
+        </div>
+        <div class="fgroup">
+          <label class="flabel">측 (Side)</label>
+          <select class="fctl" id="f-side">
+            <option value="">선택</option>
+            <option>Rt (우측)</option>
+            <option>Lt (좌측)</option>
+            <option>Bilateral (양측)</option>
+          </select>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label class="flabel">특이사항 / 진단명</label>
+        <textarea class="fctl" id="f-notes" placeholder="진단명, 병력, 주의사항, 특이소견 등..."></textarea>
+      </div>
+    </div>
+
+    <!-- Mastectomy -->
+    <div class="scard">
+      <div class="stitle">✂️ Mastectomy</div>
+      <div class="fgroup">
+        <label class="flabel">Mastectomy 방식</label>
+        <select class="fctl" id="f-mtype">
+          <option value="">선택하세요</option>
+          <option>NSM (Nipple-sparing mastectomy)</option>
+          <option>SSM (Skin-sparing mastectomy)</option>
+          <option>Total mastectomy</option>
+          <option>MRM (Modified radical mastectomy)</option>
+          <option>Radical mastectomy</option>
+          <option>Prophylactic mastectomy</option>
+          <option>기타</option>
+        </select>
+      </div>
+      <div class="frow">
+        <div class="fgroup">
+          <label class="flabel">Tumescent 량 (ml)</label>
+          <input type="number" class="fctl" id="f-tum" placeholder="ml" min="0" step="10">
+        </div>
+        <div class="fgroup">
+          <label class="flabel">절제량 (g)</label>
+          <input type="number" class="fctl" id="f-res" placeholder="gram" min="0" step="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- ADM -->
+    <div class="scard">
+      <div class="stitle">🧬 동종진피 (ADM)</div>
+      <div class="frow">
+        <div class="fgroup">
+          <label class="flabel">회사</label>
+          <input type="text" class="fctl" id="f-admco" list="admcos" placeholder="제조사">
+          <datalist id="admcos">
+            <option value="Hans Biomed (MegaDerm)">
+            <option value="LifeCell (AlloDerm)">
+            <option value="CGBio (CG Dermis)">
+            <option value="Organogenesis">
+            <option value="기타">
+          </datalist>
+        </div>
+        <div class="fgroup">
+          <label class="flabel">종류/제품명</label>
+          <input type="text" class="fctl" id="f-admtype" placeholder="제품명">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fgroup">
+          <label class="flabel">넓이 (cm²)</label>
+          <input type="number" class="fctl" id="f-admarea" placeholder="cm²" min="0" step="0.1">
+        </div>
+        <div class="fgroup">
+          <label class="flabel">두께 (mm)</label>
+          <input type="number" class="fctl" id="f-admthk" placeholder="mm" min="0" step="0.1">
+        </div>
+      </div>
+    </div>
+
+    <!-- Implant -->
+    <div class="scard">
+      <div class="stitle">💎 Silicon Implant</div>
+      <div class="frow">
+        <div class="fgroup">
+          <label class="flabel">회사</label>
+          <input type="text" class="fctl" id="f-impco" list="impcos" placeholder="제조사">
+          <datalist id="impcos">
+            <option value="Mentor">
+            <option value="Allergan (Natrelle)">
+            <option value="Motiva">
+            <option value="Sientra">
+            <option value="Bellagel (HansBiomed)">
+            <option value="기타">
+          </datalist>
+        </div>
+        <div class="fgroup">
+          <label class="flabel">종류</label>
+          <select class="fctl" id="f-imptype">
+            <option value="">선택</option>
+            <option>Round smooth</option>
+            <option>Round textured</option>
+            <option>Anatomical smooth</option>
+            <option>Anatomical textured</option>
+            <option>Round gel (cohesive)</option>
+            <option>기타</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fgroup">
+          <label class="flabel">크기 (cc)</label>
+          <input type="number" class="fctl" id="f-impcc" placeholder="cc" min="0" step="5">
+        </div>
+        <div class="fgroup">
+          <label class="flabel">제품 코드/LOT</label>
+          <input type="text" class="fctl" id="f-implot" placeholder="선택">
+        </div>
+      </div>
+    </div>
+
+    <!-- Photo: ADM -->
+    <div class="scard">
+      <div class="stitle">📸 동종진피 사진</div>
+      <div class="pgrid">
+        <div class="pgroup pfull">
+          <div class="plabel">디자인·가공된 동종진피</div>
+          <div class="pbox" id="pb-adm" onclick="trigPh('adm')">
+            <span class="pic">📷</span><span class="phint">탭하여 촬영/선택</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Photo: Pre-op -->
+    <div class="scard">
+      <div class="stitle">📸 재건 전 사진</div>
+      <div class="pgrid">
+        <div class="pgroup">
+          <div class="plabel">Upper</div>
+          <div class="pbox" id="pb-pre-upper" onclick="trigPh('pre-upper')">
+            <span class="pic">📷</span><span class="phint">촬영/선택</span>
+          </div>
+        </div>
+        <div class="pgroup">
+          <div class="plabel">Medial</div>
+          <div class="pbox" id="pb-pre-medial" onclick="trigPh('pre-medial')">
+            <span class="pic">📷</span><span class="phint">촬영/선택</span>
+          </div>
+        </div>
+        <div class="pgroup">
+          <div class="plabel">Lateral</div>
+          <div class="pbox" id="pb-pre-lateral" onclick="trigPh('pre-lateral')">
+            <span class="pic">📷</span><span class="phint">촬영/선택</span>
+          </div>
+        </div>
+        <div class="pgroup">
+          <div class="plabel">Lower</div>
+          <div class="pbox" id="pb-pre-lower" onclick="trigPh('pre-lower')">
+            <span class="pic">📷</span><span class="phint">촬영/선택</span>
+          </div>
+        </div>
+        <div class="pgroup pfull">
+          <div class="plabel">Total</div>
+          <div class="pbox" id="pb-pre-total" onclick="trigPh('pre-total')">
+            <span class="pic">📷</span><span class="phint">촬영/선택</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Photo: Post-op -->
+    <div class="scard">
+      <div class="stitle">📸 재건 후 사진</div>
+      <div class="pgrid">
+        <div class="pgroup pfull">
+          <div class="plabel">수술 직후</div>
+          <div class="pbox" id="pb-post-imm" onclick="trigPh('post-imm')">
+            <span class="pic">📷</span><span class="phint">촬영/선택</span>
+          </div>
+        </div>
+        <div class="pgroup pfull">
+          <div class="plabel">1개월 후</div>
+          <div class="pbox" id="pb-post-1m" onclick="trigPh('post-1m')">
+            <span class="pic">📷</span><span class="phint">촬영/선택</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btnrow">
+      <button class="btn btns" onclick="cancelForm()">취소</button>
+      <button class="btn btnp" onclick="saveRec()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VIEW: DETAIL ===== -->
+<div class="view" id="view-detail">
+  <div id="detailContent"></div>
+</div>
+
+<!-- ===== VIEW: SETTINGS ===== -->
+<div class="view" id="view-settings">
+  <div class="slabel">데이터 관리</div>
+
+  <div class="sitem" onclick="exportExcel()">
+    <span class="sitem-ic">📊</span>
+    <div class="sitem-tx">
+      <div class="sitem-name">Excel 내보내기</div>
+      <div class="sitem-desc">모든 기록을 .xlsx 파일로 저장 (연구용)</div>
+    </div>
+    <span class="sitem-arr">›</span>
+  </div>
+
+  <div class="sitem" onclick="exportCSV()">
+    <span class="sitem-ic">📄</span>
+    <div class="sitem-tx">
+      <div class="sitem-name">CSV 내보내기</div>
+      <div class="sitem-desc">오프라인에서도 사용 가능 (Excel에서 열기)</div>
+    </div>
+    <span class="sitem-arr">›</span>
+  </div>
+
+  <div class="sitem" onclick="exportJSON()">
+    <span class="sitem-ic">💾</span>
+    <div class="sitem-tx">
+      <div class="sitem-name">전체 백업 (JSON)</div>
+      <div class="sitem-desc">사진 포함 전체 데이터 백업 — 다른 기기로 이전</div>
+    </div>
+    <span class="sitem-arr">›</span>
+  </div>
+
+  <div class="sitem" onclick="document.getElementById('impInput').click()">
+    <span class="sitem-ic">📂</span>
+    <div class="sitem-tx">
+      <div class="sitem-name">백업 불러오기</div>
+      <div class="sitem-desc">JSON 백업 파일에서 복원 (기존 데이터에 추가)</div>
+    </div>
+    <span class="sitem-arr">›</span>
+  </div>
+  <input type="file" id="impInput" accept=".json" onchange="importJSON(event)">
+
+  <div class="slabel" style="margin-top:8px">앱 정보</div>
+  <div class="sitem" style="cursor:default">
+    <span class="sitem-ic">ℹ️</span>
+    <div class="sitem-tx">
+      <div class="sitem-name">유방재건 수술기록 v1.0</div>
+      <div class="sitem-desc">데이터는 이 기기 브라우저에 저장됩니다</div>
+    </div>
+  </div>
+
+  <div class="slabel secmark" style="margin-top:8px">위험 구역</div>
+  <div class="sitem" onclick="confirmClearAll()">
+    <span class="sitem-ic">🗑️</span>
+    <div class="sitem-tx">
+      <div class="sitem-name" style="color:#e74c3c">전체 데이터 삭제</div>
+      <div class="sitem-desc">모든 기록과 사진이 영구 삭제됩니다</div>
+    </div>
+    <span class="sitem-arr">›</span>
+  </div>
+</div>
+
+<!-- Hidden photo input -->
+<input type="file" id="phInput" accept="image/*" onchange="handlePh(event)">
+
+<!-- Lightbox -->
+<div id="lbox" onclick="closeLB()">
+  <button id="lbox-close" onclick="closeLB()">✕</button>
+  <img id="lbox-img" src="" alt="">
+</div>
+
+<!-- Confirm Modal -->
+<div class="moverlay" id="cModal">
+  <div class="modal">
+    <div class="modal-title" id="cTitle">확인</div>
+    <div class="modal-msg" id="cMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btns" onclick="closeMod()">취소</button>
+      <button class="btn btnd" id="cOkBtn">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Tab bar -->
+<div id="tabBar">
+  <button class="tab on" id="tab-list" onclick="showView('list')">
+    <span class="tab-ic">📋</span><span>기록</span>
+  </button>
+  <button class="tab" id="tab-settings" onclick="showView('settings')">
+    <span class="tab-ic">⚙️</span><span>설정</span>
+  </button>
+</div>
+
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ===== IndexedDB =====
+const DB_NAME = 'BreastReconDB', DB_VER = 1, STORE = 'patients';
+let db;
+
+function initDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, DB_VER);
+    r.onerror = () => rej(r.error);
+    r.onsuccess = () => { db = r.result; res(); };
+    r.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE)) {
+        const s = d.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
+        s.createIndex('pnum', 'pnum');
+        s.createIndex('opdate', 'opdate');
+      }
+    };
+  });
+}
+
+const dbTx = (mode) => db.transaction(STORE, mode).objectStore(STORE);
+const dbAll = () => new Promise((res, rej) => { const r = dbTx('readonly').getAll(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const dbGet = id => new Promise((res, rej) => { const r = dbTx('readonly').get(id); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const dbPut = rec => new Promise((res, rej) => { const r = dbTx('readwrite').put(rec); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const dbDel = id => new Promise((res, rej) => { const r = dbTx('readwrite').delete(id); r.onsuccess = () => res(); r.onerror = () => rej(r.error); });
+const dbClr = () => new Promise((res, rej) => { const r = dbTx('readwrite').clear(); r.onsuccess = () => res(); r.onerror = () => rej(r.error); });
+
+// ===== State =====
+let allPts = [], curPhKey = null, formPh = {};
+
+// ===== Navigation =====
+let curView = 'list', prevView = 'list';
+
+function showView(v) {
+  prevView = curView; curView = v;
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+
+  const backBtn = document.getElementById('backBtn');
+  const hActs = document.getElementById('hActs');
+  const hTitle = document.getElementById('hTitle');
+  const tabBar = document.getElementById('tabBar');
+  const fab = document.querySelector('.fab');
+
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+
+  if (v === 'list') {
+    backBtn.style.display = 'none';
+    hActs.innerHTML = '<button class="hbtn" onclick="showView(\'settings\')">설정</button>';
+    hTitle.textContent = '유방재건 수술기록';
+    tabBar.style.display = 'flex';
+    if (fab) fab.style.display = 'flex';
+    document.getElementById('tab-list').classList.add('on');
+    loadList();
+  } else if (v === 'form') {
+    backBtn.style.display = 'block';
+    hActs.innerHTML = '';
+    hTitle.textContent = document.getElementById('editId').value ? '기록 수정' : '새 기록';
+    tabBar.style.display = 'none';
+    if (fab) fab.style.display = 'none';
+  } else if (v === 'detail') {
+    backBtn.style.display = 'block';
+    hActs.innerHTML = '';
+    tabBar.style.display = 'none';
+    if (fab) fab.style.display = 'none';
+  } else if (v === 'settings') {
+    backBtn.style.display = 'none';
+    hActs.innerHTML = '';
+    hTitle.textContent = '설정';
+    tabBar.style.display = 'flex';
+    if (fab) fab.style.display = 'none';
+    document.getElementById('tab-settings').classList.add('on');
+  }
+  window.scrollTo(0, 0);
+}
+
+function goBack() { showView('list'); }
+
+// ===== List =====
+async function loadList() {
+  allPts = await dbAll();
+  allPts.sort((a, b) => (b.opdate || b.cat || '').localeCompare(a.opdate || a.cat || ''));
+  document.getElementById('totalCnt').textContent = allPts.length;
+  renderList(allPts);
+}
+
+function filterList() {
+  const q = document.getElementById('srch').value.toLowerCase().trim();
+  renderList(q ? allPts.filter(p =>
+    (p.pnum || '').toLowerCase().includes(q) ||
+    (p.notes || '').toLowerCase().includes(q) ||
+    (p.mtype || '').toLowerCase().includes(q)
+  ) : allPts);
+}
+
+function renderList(pts) {
+  const el = document.getElementById('ptList');
+  if (!pts.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-ic">🏥</div><div class="empty-tx">수술기록이 없습니다.<br>+ 버튼을 눌러 첫 기록을 추가하세요.</div></div>';
+    return;
+  }
+  el.innerHTML = pts.map(p => `
+    <div class="ptitem" onclick="showDetail(${p.id})">
+      <div class="ptavatar">${(p.pnum || '?')[0].toUpperCase()}</div>
+      <div class="ptinfo">
+        <div class="ptnum">${esc(p.pnum) || '(번호 없음)'}</div>
+        <div class="ptmeta">${[p.age ? p.age + '세' : '', p.opdate || '', p.mtype ? p.mtype.split(' ')[0] : '', p.impcc ? p.impcc + 'cc' : ''].filter(Boolean).join(' · ')}</div>
+      </div>
+      <div class="ptarrow">›</div>
+    </div>`).join('');
+}
+
+// ===== Form =====
+const FIELDS = ['pnum','age','opdate','side','notes','mtype','tum','res','admco','admtype','admarea','admthk','impco','imptype','impcc','implot'];
+const PH_KEYS = ['adm','pre-upper','pre-medial','pre-lateral','pre-lower','pre-total','post-imm','post-1m'];
+
+function showNewForm() {
+  document.getElementById('editId').value = '';
+  resetForm();
+  showView('form');
+}
+
+function resetForm() {
+  formPh = {};
+  FIELDS.forEach(f => { const el = document.getElementById('f-' + f); if (el) el.value = ''; });
+  document.getElementById('f-opdate').value = new Date().toISOString().split('T')[0];
+  PH_KEYS.forEach(k => resetPBox(k));
+}
+
+function resetPBox(k) {
+  const b = document.getElementById('pb-' + k);
+  if (!b) return;
+  b.innerHTML = '<span class="pic">📷</span><span class="phint">촬영/선택</span>';
+  b.classList.remove('has');
+}
+
+async function editRec(id) {
+  const rec = await dbGet(id);
+  if (!rec) return;
+  document.getElementById('editId').value = id;
+  formPh = rec.photos || {};
+  FIELDS.forEach(f => { const el = document.getElementById('f-' + f); if (el && rec[f] != null) el.value = rec[f]; });
+  PH_KEYS.forEach(k => formPh[k] ? setPBox(k, formPh[k]) : resetPBox(k));
+  showView('form');
+}
+
+function cancelForm() { showView('list'); }
+
+async function saveRec() {
+  const pnum = document.getElementById('f-pnum').value.trim();
+  if (!pnum) { showToast('환자번호를 입력하세요'); return; }
+  const rec = { photos: formPh, uat: new Date().toISOString() };
+  FIELDS.forEach(f => { const el = document.getElementById('f-' + f); rec[f] = el ? (el.value || null) : null; });
+  const eid = document.getElementById('editId').value;
+  if (eid) {
+    rec.id = parseInt(eid);
+    rec.cat = (await dbGet(parseInt(eid))).cat;
+  } else {
+    rec.cat = new Date().toISOString();
+  }
+  await dbPut(rec);
+  showToast('저장되었습니다 ✓');
+  showView('list');
+}
+
+// ===== Photos =====
+function trigPh(k) { curPhKey = k; const i = document.getElementById('phInput'); i.value = ''; i.click(); }
+
+function handlePh(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  compressImg(f).then(data => { formPh[curPhKey] = data; setPBox(curPhKey, data); });
+}
+
+function setPBox(k, data) {
+  const b = document.getElementById('pb-' + k);
+  if (!b) return;
+  b.innerHTML = `<img src="${data}" alt=""><button class="prmbtn" onclick="rmPh(event,'${k}')">✕</button>`;
+  b.classList.add('has');
+}
+
+function rmPh(e, k) { e.stopPropagation(); delete formPh[k]; resetPBox(k); }
+
+function compressImg(file, maxDim = 1600, q = 0.75) {
+  return new Promise(res => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width: w, height: h } = img;
+      if (w > maxDim || h > maxDim) {
+        if (w >= h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', q));
+    };
+    img.src = url;
+  });
+}
+
+// ===== Detail =====
+async function showDetail(id) {
+  const rec = await dbGet(id);
+  if (!rec) return;
+  const ph = rec.photos || {};
+
+  const row = (k, v) => `<div class="drow"><div class="dkey">${k}</div><div class="dval">${v || '-'}</div></div>`;
+
+  const pvItem = (k, label, full) => {
+    const cls = 'pvitem' + (full ? ' pvfull' : '');
+    return ph[k]
+      ? `<div class="${cls}"><div class="pvlabel">${label}</div><img class="pvimg" src="${ph[k]}" onclick="openLB('${ph[k]}')" alt="${label}"></div>`
+      : `<div class="${cls}"><div class="pvlabel">${label}</div><div class="pvempty">사진 없음</div></div>`;
+  };
+
+  document.getElementById('detailContent').innerHTML = `
+    <div style="padding-top:7px">
+      <div class="dcard">
+        <div class="dtitle">기본 정보</div>
+        ${row('환자번호', esc(rec.pnum))}
+        ${row('나이', rec.age ? rec.age + '세' : null)}
+        ${row('수술일', rec.opdate)}
+        ${row('측', rec.side)}
+        ${row('특이사항', esc(rec.notes)?.replace(/\n/g, '<br>'))}
+      </div>
+      <div class="dcard">
+        <div class="dtitle">Mastectomy</div>
+        ${row('방식', esc(rec.mtype))}
+        ${row('Tumescent', rec.tum ? rec.tum + ' ml' : null)}
+        ${row('절제량', rec.res ? rec.res + ' g' : null)}
+      </div>
+      <div class="dcard">
+        <div class="dtitle">동종진피 (ADM)</div>
+        ${row('회사', esc(rec.admco))}
+        ${row('종류', esc(rec.admtype))}
+        ${row('넓이', rec.admarea ? rec.admarea + ' cm²' : null)}
+        ${row('두께', rec.admthk ? rec.admthk + ' mm' : null)}
+      </div>
+      <div class="dcard">
+        <div class="dtitle">Silicon Implant</div>
+        ${row('회사', esc(rec.impco))}
+        ${row('종류', esc(rec.imptype))}
+        ${row('크기', rec.impcc ? rec.impcc + ' cc' : null)}
+        ${row('코드/LOT', esc(rec.implot))}
+      </div>
+    </div>
+
+    <div class="slabel" style="margin-top:4px">사진</div>
+    <div class="pvgrid">
+      ${pvItem('adm', '동종진피 (가공 후)', true)}
+      ${pvItem('pre-upper', 'Upper')}
+      ${pvItem('pre-medial', 'Medial')}
+      ${pvItem('pre-lateral', 'Lateral')}
+      ${pvItem('pre-lower', 'Lower')}
+      ${pvItem('pre-total', 'Total', true)}
+      ${pvItem('post-imm', '수술 직후', true)}
+      ${pvItem('post-1m', '1개월 후', true)}
+    </div>
+
+    <div class="btnrow">
+      <button class="btn btnd" onclick="confirmDel(${rec.id})">삭제</button>
+      <button class="btn btnp" onclick="editRec(${rec.id})">수정</button>
+    </div>
+  `;
+
+  document.getElementById('hTitle').textContent = rec.pnum || '상세보기';
+  document.getElementById('hActs').innerHTML = `<button class="hbtn" onclick="editRec(${rec.id})">수정</button>`;
+  showView('detail');
+}
+
+// ===== Lightbox =====
+function openLB(src) { document.getElementById('lbox-img').src = src; document.getElementById('lbox').classList.add('open'); }
+function closeLB() { document.getElementById('lbox').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
+
+// ===== Delete / Clear =====
+function confirmDel(id) {
+  showMod('기록 삭제', '이 수술기록을 삭제하시겠습니까? 사진 포함 모든 데이터가 영구 삭제됩니다.', async () => {
+    await dbDel(id); closeMod(); showToast('삭제되었습니다'); showView('list');
+  });
+}
+
+function confirmClearAll() {
+  showMod('전체 데이터 삭제', '모든 수술기록과 사진을 삭제합니다. 되돌릴 수 없습니다.', async () => {
+    await dbClr(); closeMod(); showToast('전체 삭제 완료'); showView('list');
+  });
+}
+
+// ===== Modal =====
+function showMod(title, msg, onOk) {
+  document.getElementById('cTitle').textContent = title;
+  document.getElementById('cMsg').textContent = msg;
+  document.getElementById('cOkBtn').onclick = onOk;
+  document.getElementById('cModal').classList.add('open');
+}
+function closeMod() { document.getElementById('cModal').classList.remove('open'); }
+
+// ===== Export: Excel =====
+async function exportExcel() {
+  const pts = await dbAll();
+  if (!pts.length) { showToast('데이터가 없습니다'); return; }
+
+  if (typeof XLSX === 'undefined') { showToast('인터넷 연결 필요 — CSV로 내보냅니다'); exportCSV(); return; }
+
+  const rows = pts.map(toRow);
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = Object.keys(rows[0]).map(() => ({ wch: 18 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '수술기록');
+  XLSX.writeFile(wb, `유방재건기록_${today()}.xlsx`);
+  showToast('Excel 저장 완료');
+}
+
+// ===== Export: CSV =====
+async function exportCSV() {
+  const pts = await dbAll();
+  if (!pts.length) { showToast('데이터가 없습니다'); return; }
+  const rows = pts.map(toRow);
+  const header = Object.keys(rows[0]);
+  const csv = [header, ...rows.map(r => header.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`))]
+    .map(r => r.join(',')).join('\n');
+  const bom = '﻿'; // UTF-8 BOM for Excel
+  dlBlob(bom + csv, `유방재건기록_${today()}.csv`, 'text/csv;charset=utf-8');
+  showToast('CSV 저장 완료');
+}
+
+function toRow(p) {
+  return {
+    '환자번호': p.pnum || '',
+    '나이': p.age || '',
+    '수술일': p.opdate || '',
+    '측': p.side || '',
+    '특이사항': p.notes || '',
+    'Mastectomy 방식': p.mtype || '',
+    'Tumescent (ml)': p.tum || '',
+    '절제량 (g)': p.res || '',
+    'ADM 회사': p.admco || '',
+    'ADM 종류': p.admtype || '',
+    'ADM 넓이 (cm²)': p.admarea || '',
+    'ADM 두께 (mm)': p.admthk || '',
+    'Implant 회사': p.impco || '',
+    'Implant 종류': p.imptype || '',
+    'Implant 크기 (cc)': p.impcc || '',
+    'Implant 코드': p.implot || '',
+    '등록일': p.cat ? p.cat.split('T')[0] : '',
+    '수정일': p.uat ? p.uat.split('T')[0] : '',
+  };
+}
+
+// ===== Export: JSON =====
+async function exportJSON() {
+  const pts = await dbAll();
+  const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), patients: pts }, null, 2);
+  dlBlob(json, `유방재건백업_${today()}.json`, 'application/json');
+  showToast('백업 파일 저장 완료');
+}
+
+// ===== Import: JSON =====
+function importJSON(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.patients || !Array.isArray(data.patients)) throw new Error('invalid');
+      showMod('백업 불러오기', `${data.patients.length}개의 기록을 불러옵니다. 기존 데이터에 추가됩니다.`, async () => {
+        for (const p of data.patients) { delete p.id; await dbPut(p); }
+        closeMod(); showToast(`${data.patients.length}개 기록 불러오기 완료`); showView('list');
+      });
+    } catch { showToast('파일을 읽을 수 없습니다'); }
+  };
+  reader.readAsText(f);
+}
+
+// ===== Utils =====
+function esc(s) { if (!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function dlBlob(data, name, type) {
+  const blob = new Blob([data], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+let _toastT;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_toastT); _toastT = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+// ===== Boot =====
+initDB().then(() => showView('list')).catch(e => alert('DB 초기화 실패: ' + e.message));
+
+// ===== PWA Service Worker =====
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
