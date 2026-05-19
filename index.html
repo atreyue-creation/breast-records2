@@ -443,8 +443,19 @@ input[type=file]{display:none}
   </div>
 </div>
 
-<!-- Hidden photo input -->
-<input type="file" id="phInput" accept="image/*" onchange="handlePh(event)">
+<!-- Hidden photo inputs -->
+<input type="file" id="phInputCam" accept="image/*" capture="environment" onchange="handlePh(event)">
+<input type="file" id="phInputGal" accept="image/*" onchange="handlePh(event)">
+
+<!-- Photo source action sheet -->
+<div class="moverlay" id="phModal">
+  <div class="modal" style="padding-bottom:32px">
+    <div class="modal-title" style="font-size:15px;margin-bottom:16px">사진 추가</div>
+    <button class="btn btnp btnblock" style="margin-bottom:10px;font-size:15px;padding:14px" onclick="openCam()">📷&nbsp;&nbsp;카메라로 촬영</button>
+    <button class="btn btns btnblock" style="margin-bottom:10px;font-size:15px;padding:14px" onclick="openGal()">🖼️&nbsp;&nbsp;갤러리에서 선택</button>
+    <button class="btn btns btnblock" style="font-size:14px;color:#888;background:#f5f5f5" onclick="closePhMod()">취소</button>
+  </div>
+</div>
 
 <!-- Lightbox -->
 <div id="lbox" onclick="closeLB()">
@@ -646,7 +657,22 @@ async function saveRec() {
 }
 
 // ===== Photos =====
-function trigPh(k) { curPhKey = k; const i = document.getElementById('phInput'); i.value = ''; i.click(); }
+function trigPh(k) {
+  curPhKey = k;
+  document.getElementById('phModal').classList.add('open');
+}
+
+function openCam() {
+  closePhMod();
+  const i = document.getElementById('phInputCam'); i.value = ''; i.click();
+}
+
+function openGal() {
+  closePhMod();
+  const i = document.getElementById('phInputGal'); i.value = ''; i.click();
+}
+
+function closePhMod() { document.getElementById('phModal').classList.remove('open'); }
 
 function handlePh(e) {
   const f = e.target.files[0];
